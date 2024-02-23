@@ -132,6 +132,14 @@ def reduced_motion_option(fn):
     )(fn)
     return fn
 
+def headers_option(fn):
+    click.option(
+        "-H",
+        "--headers",
+        type=click.File("r"),
+        help="Path to a JSON file of extra request headers"
+    )(fn)
+    return fn
 
 @click.group(
     cls=DefaultGroup,
@@ -245,9 +253,11 @@ def cli():
 @bypass_csp_option
 @silent_option
 @http_auth_options
+@headers_option
 def shot(
     url,
     auth,
+    headers,
     output,
     width,
     height,
@@ -334,6 +344,7 @@ def shot(
         context, browser_obj = _browser_context(
             p,
             auth,
+            headers=headers,
             interactive=interactive,
             devtools=devtools,
             scale_factor=scale_factor,
@@ -389,6 +400,7 @@ def shot(
 def _browser_context(
     p,
     auth,
+    headers=False,
     interactive=False,
     devtools=False,
     scale_factor=None,
@@ -430,6 +442,10 @@ def _browser_context(
             "password": auth_password,
         }
     context = browser_obj.new_context(**context_args)
+
+    if headers:
+        context.set_extra_http_headers(json.load(headers))
+
     if timeout:
         context.set_default_timeout(timeout)
     return context, browser_obj
@@ -476,9 +492,11 @@ def _browser_context(
 @skip_fail_options
 @silent_option
 @http_auth_options
+@headers_option
 def multi(
     config,
     auth,
+    headers,
     retina,
     scale_factor,
     timeout,
@@ -521,6 +539,7 @@ def multi(
         context, browser_obj = _browser_context(
             p,
             auth,
+            headers=headers,
             scale_factor=scale_factor,
             browser=browser,
             browser_args=browser_args,
@@ -581,9 +600,11 @@ def multi(
 @skip_fail_options
 @bypass_csp_option
 @http_auth_options
+@headers_option
 def accessibility(
     url,
     auth,
+    headers,
     output,
     javascript,
     timeout,
@@ -606,6 +627,7 @@ def accessibility(
         context, browser_obj = _browser_context(
             p,
             auth,
+            headers=headers,
             timeout=timeout,
             bypass_csp=bypass_csp,
             auth_username=auth_username,
@@ -661,11 +683,13 @@ def accessibility(
 @skip_fail_options
 @bypass_csp_option
 @http_auth_options
+@headers_option
 def javascript(
     url,
     javascript,
     input,
     auth,
+    headers,
     output,
     raw,
     browser,
@@ -711,6 +735,7 @@ def javascript(
         context, browser_obj = _browser_context(
             p,
             auth,
+            headers=headers,
             browser=browser,
             browser_args=browser_args,
             user_agent=user_agent,
@@ -788,9 +813,11 @@ def javascript(
 @bypass_csp_option
 @silent_option
 @http_auth_options
+@headers_option
 def pdf(
     url,
     auth,
+    headers,
     output,
     javascript,
     wait,
@@ -831,6 +858,7 @@ def pdf(
         context, browser_obj = _browser_context(
             p,
             auth,
+            headers=headers,
             bypass_csp=bypass_csp,
             auth_username=auth_username,
             auth_password=auth_password,
@@ -900,9 +928,11 @@ def pdf(
 @bypass_csp_option
 @silent_option
 @http_auth_options
+@headers_option
 def html(
     url,
     auth,
+    headers,
     output,
     javascript,
     selector,
@@ -936,6 +966,7 @@ def html(
         context, browser_obj = _browser_context(
             p,
             auth,
+            headers=headers,
             browser=browser,
             browser_args=browser_args,
             user_agent=user_agent,
@@ -1006,7 +1037,8 @@ def install(browser):
 @user_agent_option
 @click.option("--devtools", is_flag=True, help="Open browser DevTools")
 @log_console_option
-def auth(url, context_file, browser, browser_args, user_agent, devtools, log_console):
+@headers_option
+def auth(url, context_file, browser, browser_args, user_agent, devtools, log_console, headers):
     """
     Open a browser so user can manually authenticate with the specified site,
     then save the resulting authentication context to a file.
@@ -1019,6 +1051,7 @@ def auth(url, context_file, browser, browser_args, user_agent, devtools, log_con
         context, browser_obj = _browser_context(
             p,
             auth=None,
+            headers=headers,
             interactive=True,
             devtools=devtools,
             browser=browser,
